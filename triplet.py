@@ -12,7 +12,7 @@ jira = atl_util.jira()
 
 empty = {
     "project": {"key": ENV["ATL_PROJECT"]},
-    "summary": "TRANSIENT TICKET STATE",
+    "summary": "DRAFT: TRANSIENT TICKET STATE",
     "issuetype": {"name": "Story"},
 }
 data = jira.issue_create(empty)["key"]
@@ -41,7 +41,7 @@ def description(summary, data, api, ui):
 jira.update_issue_field(
     data,
     {
-        "summary": f"{text['summary']} : Data",
+        "summary": f"DRAFT: {text['summary']} : Data",
         "description": description(text["summary"], THIS, api, ui)
         + f"{text['description']}\n\n"
         "*Upstream data source*\n"
@@ -60,7 +60,7 @@ jira.update_issue_field(
 jira.update_issue_field(
     api,
     {
-        "summary": f"{text['summary']} : API",
+        "summary": f"DRAFT: {text['summary']} : API",
         "description": description(text["summary"], data, THIS, ui)
         + f"{text['description']}\n\n"
         f"*DataMart*: see {data}\n\n"
@@ -72,7 +72,7 @@ jira.update_issue_field(
 jira.update_issue_field(
     ui,
     {
-        "summary": f"{text['summary']} : UI",
+        "summary": f"DRAFT: {text['summary']} : UI",
         "description": description(text["summary"], data, api, THIS)
         + f"{text['description']}\n\n"
         f"*API*: see {api}\n\n"
@@ -81,6 +81,10 @@ jira.update_issue_field(
         "  * Tab: \n"
         "  * Table headers: \n"
         "  ** \n"
+        "  *** filterable: y/n\n"
+        "  *** sortable: y/n\n"
+        "  *** pre-filtered: y/n\n"
+        "  *** pre-sorted: y/n\n"
         "  ** \n"
         "  ** \n",
         "labels": ["UI"],

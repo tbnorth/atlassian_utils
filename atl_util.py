@@ -13,20 +13,23 @@ load_dotenv("atlassian.env")
 ENV = os.environ
 
 
-def confluence():
-    """A Confluence connection."""
-    return atlassian.Confluence(
-        url=ENV["ATL_HOST_CONFLUENCE"],
-        username=ENV["ATL_USER"],
-        password=ENV["ATL_PASS"],
-    )
+def __make_connection(type_):
+    """Function factory for Bitbucket / Confluence / Jira connection functions."""
+    def func(url=None, username=None, password=None):
+        """Return required connection type."""
+        return getattr(atlassian, type_)(
+            url=url or ENV["ATL_HOST_" + type_.upper()],
+            username=username or ENV["ATL_USER"],
+            password=password or ENV["ATL_PASS"],
+        )
+
+    func.__doc__ = f"Return a {type_} connection."
+    return func
 
 
-def jira():
-    """A Jira connection."""
-    return atlassian.Jira(
-        url=ENV["ATL_HOST_JIRA"], username=ENV["ATL_USER"], password=ENV["ATL_PASS"]
-    )
+bitbucket = __make_connection("Bitbucket")
+confluence = __make_connection("Confluence")
+jira = __make_connection("Jira")
 
 
 def epic_info():
