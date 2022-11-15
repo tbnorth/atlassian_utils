@@ -1,16 +1,21 @@
 """Utilities for accessing Atlassian services."""
 
 import os
+import readline
 from collections import namedtuple
 from functools import partial
+from pathlib import Path
+# from pprint import pprint
 from urllib.parse import urljoin
-from pprint import pprint
 
 import atlassian
 import requests
 from dotenv import load_dotenv
 
 assert partial  # imported for client convenience
+
+if Path(".history").exists():
+    readline.read_history_file()
 
 EpicInfo = namedtuple("EpicInfo", "name link type")
 
@@ -115,3 +120,34 @@ def fetch(stub):
         for result in results[key]:
             yield result
         start += block_size
+
+
+def jql_result(jira, default):
+    """Interactive JQL result with persistent history, client facing."""
+    history = [
+        readline.get_history_item(i)
+        for i in range(1, readline.get_current_history_length() + 1)
+    ]
+    if default not in history:
+        readline.add_history(default)
+    try:
+        return jql_result_interaction(jira)
+    finally:
+        readline.write_history_file()
+
+
+def jql_result_interaction(jira):
+    """Interactive JQL result with persistent history."""
+    ok = False
+    while not ok:
+        jql = input("JQL: ")
+        results = jira.jql_get_list_of_tickets(jql)
+        print(f"{len(results)} results")
+        for issue in results[:10]:
+            print(
+                issue["key"],
+                issue["fields"]["status"]["name"],
+                issue["fields"]["summary"],
+            )
+        ok = "y" in input("Ok [y/N]: ").lower()
+    return results

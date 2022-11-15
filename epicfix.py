@@ -8,10 +8,9 @@ ENV = atl_util.ENV
 jira = atl_util.jira()
 
 query = f"project = {atl_util.ENV['ATL_PROJECT']} and type = Epic and labels = CCD_FY23"
-print(query)
-todo = jira.jql_get_list_of_tickets(query)
+todo = atl_util.jql_result(jira, query)
 
-# test !~ foo is not supported in JQL
+# test !~ foo is not supported in JQL, and description may be None
 todo = [
     i for i in todo if "([ticket details|" not in (i["fields"]["description"] or "")
 ]
