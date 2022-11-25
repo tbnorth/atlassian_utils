@@ -1,3 +1,4 @@
+"""Read Confluence pages to check requirements / epics etc."""
 from io import StringIO
 
 import inquirer

@@ -1,3 +1,4 @@
+"""Set tags on tickets."""
 import atl_util
 
 jira = atl_util.jira()
