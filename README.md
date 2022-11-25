@@ -12,4 +12,6 @@
 
 ## Notes
 
+    read -s ATL_PASS
+    export ATL_PASS
     PYTHONPATH=. pytest tests -vv

@@ -1,9 +1,11 @@
 """Utilities for accessing Atlassian services."""
-
 import os
 import readline
-from collections import namedtuple
-from functools import partial
+import time
+from collections import defaultdict, namedtuple
+from collections.abc import Iterable
+from functools import cache, partial
+from itertools import chain
 from pathlib import Path
 # from pprint import pprint
 from urllib.parse import urljoin
@@ -21,6 +23,24 @@ EpicInfo = namedtuple("EpicInfo", "name link type")
 
 load_dotenv("atlassian.env")
 ENV = os.environ
+
+EDGE_COLOR = {
+    "Epic": "#6666bb",
+}
+EDGE_COLOR_DEFAULT = "#000000"
+NODE_COLOR = {
+    "Abandon": "#eeeeee",
+    "Done": "#ffffff",
+    "Epic": "#bbbbff",
+    "Ice Box": "#aaaaaa",
+    "In Review": "#eeddaa",
+    "In Progress": "#ffdddd",
+}
+NODE_COLOR_DEFAULT = "#ffaaaa"
+NODE_SHAPE = {
+    "Ice Box": "box",
+}
+NODE_SHAPE_DEFAULT = "ellipse"
 
 
 def __make_connection(type_):
@@ -91,6 +111,7 @@ class JiraAPI(APIWrapper):
     type = "Jira"
 
 
+@cache
 def epic_info():
     """Info. about epics, which are implemented as custom fields."""
     # these claim to require admin. which is not true
@@ -122,7 +143,7 @@ def fetch(stub):
         start += block_size
 
 
-def jql_result(jira, default):
+def jql_result(jira, default, use_default=False):
     """Interactive JQL result with persistent history, client facing."""
     history = [
         readline.get_history_item(i)
@@ -131,16 +152,20 @@ def jql_result(jira, default):
     if default not in history:
         readline.add_history(default)
     try:
-        return jql_result_interaction(jira)
+        return jql_result_interaction(jira, default=default if use_default else None)
     finally:
         readline.write_history_file()
 
 
-def jql_result_interaction(jira):
+def jql_result_interaction(jira, default=None):
     """Interactive JQL result with persistent history."""
     ok = False
     while not ok:
-        jql = input("JQL: ")
+        if default:  # for dev., don't ask questions
+            ok = True
+            jql = default
+        else:
+            jql = input("JQL: ")
         results = jira.jql_get_list_of_tickets(jql)
         print(f"{len(results)} results")
         for issue in results[:10]:
@@ -149,5 +174,71 @@ def jql_result_interaction(jira):
                 issue["fields"]["status"]["name"],
                 issue["fields"]["summary"],
             )
-        ok = "y" in input("Ok [y/N]: ").lower()
+        ok = default or "y" in input("Ok [y/N]: ").lower()
     return results
+
+
+def jira_url(ticket: dict) -> str:
+    """URL for Jira ticket."""
+    return f"{ENV['ATL_HOST_JIRA']}/browse/{ticket['key']}"
+
+
+def graph_add(graph: dict, from_: dict, to: dict | None = None) -> None:
+    """Add a link between to tickets in a graph."""
+    graph.setdefault("edge", []).append((from_, to))
+
+
+def graph_to_dot(graph: dict, show_labels: Iterable[str] | None = None) -> str:
+    """Generate graphviz dot source from graph."""
+    show_labels = show_labels or []
+    timestamp = f"Generated {time.asctime()}"
+    dot = [f'digraph "{timestamp}" {{']
+    attributes = defaultdict(str)
+    for ticket in chain.from_iterable(graph["edge"]):
+        if ticket is None:
+            continue  # node passed without edges
+        ticket["__key"] = ticket["key"].replace("-", "_")
+        label = [ticket["key"]]
+        if ticket["fields"]["issuetype"]["name"] == "Epic":
+            label.append("\\n" + ticket["fields"][epic_info().name])
+        if show_labels:
+            label.append(
+                "\\n"
+                + " ".join(
+                    i for i in show_labels if i in ticket["fields"].get("labels", [])
+                )
+            )
+        label = "".join(label)
+        attribs = {
+            "fillcolor": NODE_COLOR.get(
+                ticket["fields"]["status"]["name"], NODE_COLOR_DEFAULT
+            ),
+            "href": jira_url(ticket),
+            "label": label,
+            "shape": NODE_SHAPE.get(
+                ticket["fields"]["status"]["name"], NODE_SHAPE_DEFAULT
+            ),
+            "style": "filled",
+            "tooltip": ticket["fields"]["summary"].replace('"', "'")
+            + f" [{ticket['fields']['status']['name']}]",
+        }
+        attribs = ";".join(f'{key}="{value}"' for key, value in attribs.items())
+        if len(attribs) > len(attributes[ticket["__key"]]):
+            # Process all tickets as some may be sparse vs. full data.
+            # Keep the longest attribute sets generated.
+            attributes[ticket["__key"]] = attribs
+    for key, attribs in attributes.items():
+        dot.append(f"{key} [{attribs}]")
+
+    for from_, to in graph["edge"]:
+        if to is None:
+            continue
+        attribs = {
+            "color": EDGE_COLOR["Epic"]
+            if from_["fields"]["issuetype"]["name"] == "Epic"
+            else EDGE_COLOR_DEFAULT
+        }
+        attribs = ";".join(f'{key}="{value}"' for key, value in attribs.items())
+        dot.append(f"{from_['__key']} -> {to['__key']} [{attribs}]")
+    dot.append("}")
+    return "\n".join(dot)
