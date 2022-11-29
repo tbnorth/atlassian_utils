@@ -38,9 +38,9 @@ NODE_COLOR = {
 }
 NODE_COLOR_DEFAULT = "#ffaaaa"
 NODE_SHAPE = {
-    "Ice Box": "box",
+    "Ice Box": "ellipse",
 }
-NODE_SHAPE_DEFAULT = "ellipse"
+NODE_SHAPE_DEFAULT = "box"
 
 
 def __make_connection(type_):
