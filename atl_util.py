@@ -1,5 +1,6 @@
 """Utilities for accessing Atlassian services."""
 import os
+import re
 import readline
 import time
 from collections import defaultdict, namedtuple
@@ -188,6 +189,13 @@ def graph_add(graph: dict, from_: dict, to: dict | None = None) -> None:
     graph.setdefault("edge", []).append((from_, to))
 
 
+def fix_version(text):
+    """Get version text, longest digits and dots"""
+    texts = re.split("[^0-9.]+", text)
+    texts.sort(key=len)
+    return texts[-1]
+
+
 def graph_to_dot(graph: dict, show_labels: Iterable[str] | None = None) -> str:
     """Generate graphviz dot source from graph."""
     show_labels = show_labels or []
@@ -208,6 +216,9 @@ def graph_to_dot(graph: dict, show_labels: Iterable[str] | None = None) -> str:
                     i for i in show_labels if i in ticket["fields"].get("labels", [])
                 )
             )
+        for version in ticket["fields"].get("fixVersions", []):
+            label[-1] += " " + fix_version(version["name"])
+
         label = "".join(label)
         attribs = {
             "fillcolor": NODE_COLOR.get(
