@@ -40,6 +40,7 @@ NODE_COLOR = {
 NODE_COLOR_DEFAULT = "#ffaaaa"
 NODE_SHAPE = {
     "Ice Box": "ellipse",
+    "Bug": "note",
 }
 NODE_SHAPE_DEFAULT = "box"
 
@@ -226,12 +227,17 @@ def graph_to_dot(graph: dict, show_labels: Iterable[str] | None = None) -> str:
             ),
             "href": jira_url(ticket),
             "label": label,
+            # Set shape by status or type
             "shape": NODE_SHAPE.get(
-                ticket["fields"]["status"]["name"], NODE_SHAPE_DEFAULT
+                ticket["fields"]["status"]["name"],
+                NODE_SHAPE.get(
+                    ticket["fields"]["issuetype"]["name"], NODE_SHAPE_DEFAULT
+                ),
             ),
             "style": "filled",
             "tooltip": ticket["fields"]["summary"].replace('"', "'")
             + f" [{ticket['fields']['status']['name']}]",
+            "target": "_ticket",
         }
         attribs = ";".join(f'{key}="{value}"' for key, value in attribs.items())
         if len(attribs) > len(attributes[ticket["__key"]]):
