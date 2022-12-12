@@ -35,6 +35,7 @@ NODE_COLOR = {
     "Epic": "#bbbbff",
     "Ice Box": "#aaaaaa",
     "In Review": "#eeddaa",
+    "In Code Review": "#eeddaa",
     "In Progress": "#ffdddd",
 }
 NODE_COLOR_DEFAULT = "#ffaaaa"

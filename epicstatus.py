@@ -12,7 +12,7 @@ query = (
     "and type = Epic and updated > startOfYear() "
     "and labels=CCD_FY23 "
 )
-todo = atl_util.jql_result(jira, query, use_default=True)
+todo = atl_util.jql_result(jira, query)
 
 results = []
 graph = {}
