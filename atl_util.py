@@ -16,9 +16,9 @@ import requests
 from dotenv import load_dotenv
 
 assert partial  # imported for client convenience
-
-if Path(".history").exists():
-    readline.read_history_file()
+HISTORY = ".history"
+if Path(HISTORY).exists():
+    readline.read_history_file(HISTORY)
 
 EpicInfo = namedtuple("EpicInfo", "name link type")
 
@@ -157,7 +157,7 @@ def jql_result(jira, default, use_default=False):
     try:
         return jql_result_interaction(jira, default=default if use_default else None)
     finally:
-        readline.write_history_file()
+        readline.write_history_file(HISTORY)
 
 
 def jql_result_interaction(jira, default=None):
