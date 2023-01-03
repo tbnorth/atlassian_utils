@@ -40,7 +40,7 @@ NODE_COLOR = {
 }
 NODE_COLOR_DEFAULT = "#ffaaaa"
 NODE_SHAPE = {
-    "Ice Box": "ellipse",
+    # "Ice Box": "ellipse",
     "Bug": "note",
 }
 NODE_SHAPE_DEFAULT = "box"
