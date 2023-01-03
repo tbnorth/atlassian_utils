@@ -1,4 +1,5 @@
 """Analyze epic ticketing status."""
+import time
 from collections import defaultdict
 from pathlib import Path
 
@@ -16,6 +17,7 @@ todo = atl_util.jql_result(jira, query)
 
 results = []
 graph = {}
+table = []
 for epic in todo:
     issues = atl_util.partial(jira.epic_issues, epic["key"])
     issues = atl_util.fetch(issues)
@@ -38,6 +40,17 @@ for epic in todo:
     epic["_status"] = status
     results.append(epic)
 
+    lines = epic["fields"]["description"].split("\n")
+    lines = [i for i in lines if i.startswith("status:")] or ["status: "]
+    table.append(
+        (
+            atl_util.jira_link(epic, target="_epic"),
+            epic["fields"]["status"]["name"],
+            epic["fields"]["summary"],
+            lines[-1][len("status: ") :],
+        )
+    )
+
 results.sort(key=lambda x: x["fields"]["status"]["name"])
 for epic in results:
     print(epic["key"], epic["fields"]["status"]["name"], epic["fields"]["summary"])
@@ -46,3 +59,15 @@ for epic in results:
 Path("graph.dot").write_text(
     atl_util.graph_to_dot(graph, show_labels=["API", "Data", "DATA", "UI"])
 )
+
+table.sort(key=lambda x: (x[1], x[0]))  # by status, then key
+with open("table.html", "w") as out:
+    out.write(atl_util.HEADER)
+    out.write(
+        "<table><tr><th>Epic</th><th>Status</th><th>Summary</th><th>Status</th></tr>"
+    )
+    for row in table:
+        out.write("<tr><td class='nowrap'>" + "</td><td>".join(row) + "</td></tr>")
+    out.write("</table>")
+    out.write("<p>" + time.asctime() + "</p>")
+    out.write(atl_util.FOOTER)

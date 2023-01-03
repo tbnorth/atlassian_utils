@@ -1,4 +1,5 @@
 """Utilities for accessing Atlassian services."""
+import html
 import os
 import re
 import readline
@@ -25,6 +26,7 @@ EpicInfo = namedtuple("EpicInfo", "name link type")
 load_dotenv("atlassian.env")
 ENV = os.environ
 
+STATUS_DONE = "Abandon", "Done"
 EDGE_COLOR = {
     "Epic": "#6666bb",
 }
@@ -44,6 +46,19 @@ NODE_SHAPE = {
     "Bug": "note",
 }
 NODE_SHAPE_DEFAULT = "box"
+
+HEADER = """<!doctype html>
+<html lang="en"><head><title>:Atlassian Report:</title>
+<link rel="stylesheet"
+href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css"
+integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65"
+crossorigin="anonymous">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.min.js"
+integrity="sha384-cuYeSxntonz0PPNlHhBs68uyIAVpIIOZZ5JqeqvYYIcEL727kskC66kF92t6Xl2V"
+crossorigin="anonymous"></script>
+<style>.nowrap {white-space: nowrap;}</style>
+</head><body>"""
+FOOTER = "</body></html>"
 
 
 def __make_connection(type_):
@@ -184,6 +199,21 @@ def jql_result_interaction(jira, default=None):
 def jira_url(ticket: dict) -> str:
     """URL for Jira ticket."""
     return f"{ENV['ATL_HOST_JIRA']}/browse/{ticket['key']}"
+
+
+def jira_link(ticket: dict, target="_issue") -> str:
+    """Link for Jira ticket."""
+    text = ticket["key"]
+    if ticket["fields"]["status"]["name"] in STATUS_DONE:
+        text = f"<s>{text}</s>"
+    title = [
+        f"{ticket['fields']['issuetype']['name']}: {ticket['fields']['summary']}"
+        f" - {ticket['fields']['status']['name']}",
+        " ".join(ticket["fields"]["labels"]),
+        " ".join(i["name"] for i in ticket["fields"]["fixVersions"]),
+    ]
+    title = html.escape("\n".join(i.strip() for i in title if i.strip()))
+    return f"<a target='{target}' href='{jira_url(ticket)}' title='{title}'>{text}</a>"
 
 
 def graph_add(graph: dict, from_: dict, to: dict | None = None) -> None:
