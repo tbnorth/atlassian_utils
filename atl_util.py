@@ -68,11 +68,19 @@ def __make_connection(type_):
 
     def func(url=None, username=None, password=None):
         """Return required connection type."""
-        return getattr(atlassian, type_)(
-            url=url or ENV["ATL_HOST_" + type_.upper()],
-            username=username or ENV["ATL_USER"],
-            password=password or ENV["ATL_PASS"],
-        )
+        kwargs = {"url": url or ENV["ATL_HOST_" + type_.upper()]}
+        auth = password or ENV["ATL_PASS"]
+        if auth.startswith("token:"):
+            kwargs.update({"token": auth[len("token:") :]})
+        else:
+            kwargs.update(
+                {
+                    "username": username or ENV["ATL_USER"],
+                    "password": auth,
+                }
+            )
+
+        return getattr(atlassian, type_)(**kwargs)
 
     func.__doc__ = f"Return a {type_} connection."
     return func
