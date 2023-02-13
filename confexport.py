@@ -11,18 +11,11 @@ import atl_util
 ENV = atl_util.ENV
 
 
-def recurse_pages(page_id):
-    """Yield descendant pages of page_id recursively."""
-    for child in confluence.get_child_pages(page_id):
-        yield child
-        yield from recurse_pages(child["id"])
-
-
 def soup(text):
+    """Load XML soup from page content, determine type, epic."""
     if not text.strip():
         return {"type": "N/A", "epic": None}
 
-    """Load XML soup from page content, determine type, epic."""
     # nspace = "http://example.com/"
     # text = f"""<html xmlns:ac="{nspace}">{text}</html>"""
     text = text.replace("ac:", "")
@@ -51,7 +44,7 @@ space = confluence.get_page_space(page_id)
 print(page_id)
 
 epic_keys = []
-for page in recurse_pages(page_id):
+for page in atl_util.recurse_pages(page_id):
     page = confluence.get_page_by_id(page["id"], expand="body.storage")
     try:
         storage = page["body"]["storage"]["value"]
@@ -62,8 +55,7 @@ for page in recurse_pages(page_id):
     name = page["title"].replace(" ", "_").replace("/", "_")
     Path("out/" + name + ".html").write_text(storage)
     run(
-        "pandoc "
-        "-t gfm "
+        "pandoc -t gfm "
         # "-t markdown-simple_tables "
         # "-t markdown_github+pipe_tables-grid_tables "
         f"out/{name}.html -o out/{name}.md",

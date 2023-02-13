@@ -298,3 +298,17 @@ def graph_to_dot(graph: dict, show_labels: Iterable[str] | None = None) -> str:
         dot.append(f"{from_['__key']} -> {to['__key']} [{attribs}]")
     dot.append("}")
     return "\n".join(dot)
+
+
+def recurse_pages(confl, page_id, state=None):
+    """Yield descendant pages of Confluence page_id recursively."""
+    if state is None:
+        state = {"id_path": [], "title_path": []}
+    for child in confl.get_child_pages(page_id):
+        page = confl.get_page_by_id(child["id"])
+        child_state = {
+            "id_path": state["id_path"] + [child["id"]],
+            "title_path": state["title_path"] + [page["title"]],
+        }
+        yield child_state
+        yield from recurse_pages(confl, child["id"], state=child_state)

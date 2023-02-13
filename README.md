@@ -10,6 +10,9 @@
 - **tagmunge.py** - Analyze duplicate tags.
 - **triplet.py** - Create triplet of Data / API / UI tickets.
 
+- confexport.py - Export Confluence content to GitHub markdown.
+- userlist.py - List users, API omits last login info.
+
 ## Notes
 
     read -s ATL_PASS
