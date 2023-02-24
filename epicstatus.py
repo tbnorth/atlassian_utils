@@ -31,6 +31,9 @@ for epic in todo:
             if link["type"]["name"] == "Blocks" and "outwardIssue" in link:
                 atl_util.graph_add(graph, issue, link["outwardIssue"])
                 done.add(link["outwardIssue"]["key"])
+        for sub in jira.jql_get_list_of_tickets(f"parent = {issue['key']}"):
+            atl_util.graph_add(graph, issue, sub)
+            done.add(sub["key"])
     for issue in issues:
         if issue["key"] not in done:
             atl_util.graph_add(graph, epic, issue)
@@ -40,7 +43,7 @@ for epic in todo:
     epic["_status"] = status
     results.append(epic)
 
-    lines = epic["fields"]["description"].split("\n")
+    lines = (epic["fields"]["description"] or "").split("\n")
     lines = [i for i in lines if i.startswith("status:")] or ["status: "]
     table.append(
         (
