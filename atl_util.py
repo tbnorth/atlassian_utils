@@ -3,6 +3,7 @@ import html
 import os
 import re
 import readline
+import sys
 import time
 from collections import defaultdict, namedtuple
 from collections.abc import Iterable
@@ -193,12 +194,15 @@ def jql_result_interaction(jira, default=None):
         else:
             jql = input("JQL: ")
         results = jira.jql_get_list_of_tickets(jql)
-        print(f"{len(results)} results")
+        sys.stderr.write(f"{len(results)} results\n")
         for issue in results[:10]:
-            print(
-                issue["key"],
-                issue["fields"]["status"]["name"],
-                issue["fields"]["summary"],
+            sys.stderr.write(
+                "%s %s %s\n"
+                % (
+                    issue["key"],
+                    issue["fields"]["status"]["name"],
+                    issue["fields"]["summary"],
+                )
             )
         ok = default or "y" in input("Ok [y/N]: ").lower()
     return results
