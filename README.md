@@ -23,6 +23,7 @@ can be used to re-use previous queries.
 - **settags.py** - Set tags on tickets.
 - **tagmunge.py** - Analyze duplicate tags.
 - **triplet.py** - Create triplet of Data / API / UI tickets.
+- uat_report.py - Generate UAT report.
 
 - confexport.py - Export Confluence content to GitHub markdown.
 - userlist.py - List users, API omits last login info.
