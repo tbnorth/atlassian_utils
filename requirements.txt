@@ -1,4 +1,4 @@
-atlassian-python-api
+git+https://github.com/brownterryn/atlassian-python-api.git
 python-dotenv
 lxml
 inquirer
