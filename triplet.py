@@ -118,20 +118,15 @@ for step, template in steps.items():
     )
 
 
-exit()
-
-link = {
-    "type": {"name": "Blocks"},
-    "inwardIssue": {"key": tick["Data"]},
-    "outwardIssue": {"key": tick["api"]},
-}
-jira.create_issue_link(link)
-link = {
-    "type": {"name": "Blocks"},
-    "inwardIssue": {"key": tick["api"]},
-    "outwardIssue": {"key": tick["ui"]},
-}
-jira.create_issue_link(link)
+extant = [i for i in STEPS if existing[i] != -1]
+for step_i in range(1, len(extant)):
+    link = {
+        "type": {"name": "Blocks"},
+        "inwardIssue": {"key": tick[extant[step_i - 1]]},
+        "outwardIssue": {"key": tick[extant[step_i]]},
+    }
+    print(link)
+    jira.create_issue_link(link)
 
 for what in steps:
     print(f"{what} {ENV['ATL_HOST_JIRA']}/browse/{tick[what]}")
