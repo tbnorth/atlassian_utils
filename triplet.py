@@ -18,15 +18,63 @@ empty = {
     "summary": DRAFT,
     "issuetype": {"name": "Story"},
 }
-steps = "data", "api", "ui"
-existing = {k: v for k, v in zip((steps), map(int, sys.argv[1:] + [0, 0, 0]))}
+STEPS = {
+    "Data": {
+        "summary": "DRAFT: {text[summary]} : Data",
+        "description": "{text[description]}\n\n"
+        "*Upstream data source*\n"
+        "  * server: \n"
+        "  * db: \n"
+        "  * table/collection: \n"
+        "  * fields/keys: \n\n"
+        "*DataMart location*\n"
+        "  * server: \n"
+        "  * db: \n"
+        "  * table/collection: \n"
+        "  * fields/keys: \n",
+        "labels": ["DATA", "NeedsDataInfo"],
+    },
+    "API": {
+        "summary": "DRAFT: {text[summary]} : API",
+        "description": "{text[description]}\n\n"
+        "*DataMart*: see {tick[Data]}\n\n"
+        "*API location*\n"
+        "  * URI: \n",
+        "labels": ["API", "NeedsAPIInfo"],
+    },
+    "UI": {
+        "summary": "DRAFT: {text[summary]} : UI",
+        "description": "{text[description]}\n\n"
+        "*API*: see {tick[API]}\n\n"
+        "*JSON contract*: \n\n"
+        "*UI location*\n"
+        "  * Tab: \n"
+        "  * Table headers: \n"
+        "  ** \n"
+        "  *** filterable: y/n\n"
+        "  *** sortable: y/n\n"
+        "  *** pre-filtered: y/n\n"
+        "  *** pre-sorted: y/n\n"
+        "  ** \n"
+        "  ** \n",
+        "labels": ["UI"],
+    },
+}
+existing = {k: v for k, v in zip(STEPS, map(int, sys.argv[1:] + [0] * len(STEPS)))}
+steps = dict(i for i in STEPS.items() if existing[i[0]] != -1)
+print(f"Creating / reusing tickets for these steps: {list(steps)}")
+if "y" not in input("Ok [y/N]: ").lower():
+    exit()
+
 tick = {
     step: (
         f"{PROJ}-{existing[step]}"
-        if existing[step]
+        if existing[step] > 0
         else jira.issue_create(empty)["key"]
+        if existing[step] == 0
+        else "N/A"
     )
-    for step in steps
+    for step in STEPS
 }
 # {'id': '49984',
 #  'key': 'CE-3133',
@@ -43,71 +91,38 @@ text["summary"] = text["summary"].rstrip(".")
 THIS = "this ticket"  # used in cross reference header
 
 
-def description(summary, data, api, ui):
-    what = "Data" if data == THIS else "API" if api == THIS else "UI"
-    return f"h2. {summary} : {what}\n(*Data:* {data} *API:* {api} *UI:* {ui})\n\n"
+def description(summary, step, tick):
+    text = f"h2. {summary} : {step}\n("
+    sep = ""
+    for step_i in STEPS:
+        text += f"{sep}*{step_i}:* " + (
+            THIS if step == step_i else f"{{tick[{step_i}]}}"
+        )
+        sep = " "
+    text += ")\n\n"
+    return text
 
 
-if not existing["data"]:
+for step, template in steps.items():
+    if existing[step] != 0:
+        continue
     jira.update_issue_field(
-        tick["data"],
+        tick[step],
         {
-            "summary": f"DRAFT: {text['summary']} : Data",
-            "description": description(text["summary"], THIS, tick["api"], tick["ui"])
-            + f"{text['description']}\n\n"
-            "*Upstream data source*\n"
-            "  * server: \n"
-            "  * db: \n"
-            "  * table/collection: \n"
-            "  * fields/keys: \n\n"
-            "*DataMart location*\n"
-            "  * server: \n"
-            "  * db: \n"
-            "  * table/collection: \n"
-            "  * fields/keys: \n",
-            "labels": ["Data", "NeedsDataInfo"],
+            "summary": template["summary"].format(text=text, tick=tick),
+            "description": (
+                description(text["summary"], step, tick) + template["description"]
+            ).format(text=text, tick=tick),
+            "labels": template["labels"],
         },
     )
 
-if not existing["api"]:
-    jira.update_issue_field(
-        tick["api"],
-        {
-            "summary": f"DRAFT: {text['summary']} : API",
-            "description": description(text["summary"], tick["data"], THIS, tick["ui"])
-            + f"{text['description']}\n\n"
-            f"*DataMart*: see {tick['data']}\n\n"
-            "*API location*\n"
-            "  * URI: \n",
-            "labels": ["API", "NeedsAPIInfo"],
-        },
-    )
 
-if not existing["ui"]:
-    jira.update_issue_field(
-        tick["ui"],
-        {
-            "summary": f"DRAFT: {text['summary']} : UI",
-            "description": description(text["summary"], tick["data"], tick["api"], THIS)
-            + f"{text['description']}\n\n"
-            f"*API*: see {tick['api']}\n\n"
-            f"*JSON contract*: \n\n"
-            "*UI location*\n"
-            "  * Tab: \n"
-            "  * Table headers: \n"
-            "  ** \n"
-            "  *** filterable: y/n\n"
-            "  *** sortable: y/n\n"
-            "  *** pre-filtered: y/n\n"
-            "  *** pre-sorted: y/n\n"
-            "  ** \n"
-            "  ** \n",
-            "labels": ["UI"],
-        },
-    )
+exit()
+
 link = {
     "type": {"name": "Blocks"},
-    "inwardIssue": {"key": tick["data"]},
+    "inwardIssue": {"key": tick["Data"]},
     "outwardIssue": {"key": tick["api"]},
 }
 jira.create_issue_link(link)
