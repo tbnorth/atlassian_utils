@@ -14,11 +14,24 @@ query = (
     "and labels=CCD_FY23 "
 )
 todo = atl_util.jql_result(jira, query)
+EI = atl_util.epic_info()
+epics_todo = set()
+for issue in todo:
+    if issue["fields"]["issuetype"]["name"] == "Epic":
+        epics_todo.add(issue)
+    else:
+        epic = issue["fields"][EI.link]
+        if epic:
+            epics_todo.add(epic)
+        else:
+            print("No epic for", atl_util.jira_url(issue))
+print(epics_todo)
+epics_todo = jira.jql_get_list_of_tickets("issuekey in (" + ",".join(epics_todo) + ")")
 
 results = []
 graph = {}
 table = []
-for epic in todo:
+for epic in epics_todo:
     issues = atl_util.partial(jira.epic_issues, epic["key"])
     issues = atl_util.fetch(issues)
     issues = list(issues)
