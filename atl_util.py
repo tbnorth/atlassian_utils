@@ -93,7 +93,7 @@ jira = __make_connection("Jira")
 
 
 class APIWrapper:
-    """Wrapper for directs (requests) access to API for things not covered by the
+    """Wrapper for direct (requests) access to API for things not covered by the
     Python API wrapper objects.
     """
 
@@ -103,19 +103,25 @@ class APIWrapper:
         )
         username = username or ENV["ATL_USER"]
         password = password or ENV["ATL_PASS"]
-        self.auth = (
+        self.auth = (  # Note: not used
             requests.auth.HTTPBasicAuth(username, password)
             if username and password
             else None
         )
+        self.kwargs = {}
+        if password.startswith("token:"):
+            self.kwargs.setdefault("headers", {})
+            self.kwargs["headers"]["Authorization"] = (
+                "Bearer " + password[len("token:") :]
+            )
 
     def get(self, api_path, **kwargs):
-        response = requests.get(urljoin(self.url, api_path), **kwargs)
+        response = requests.get(urljoin(self.url, api_path), **(self.kwargs | kwargs))
         response.raise_for_status()
         return response.json()
 
     def post(self, api_path, **kwargs):
-        response = requests.post(urljoin(self.url, api_path), **kwargs)
+        response = requests.post(urljoin(self.url, api_path), **(self.kwargs | kwargs))
         response.raise_for_status()
         return response.json()
 
