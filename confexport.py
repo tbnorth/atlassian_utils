@@ -1,4 +1,4 @@
-"""Read Confluence pages to check requirements / epics etc."""
+"""Experimental PanDoc export to GitHub Flavored Markdown."""
 from io import StringIO
 from pathlib import Path
 from subprocess import run

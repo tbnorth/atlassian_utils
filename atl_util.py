@@ -70,7 +70,7 @@ def __make_connection(type_):
     def func(url=None, username=None, password=None):
         """Return required connection type."""
         kwargs = {"url": url or ENV["ATL_HOST_" + type_.upper()]}
-        auth = password or ENV["ATL_PASS"]
+        auth = password or ENV.get("ATL_PASS_" + type_.upper()) or ENV["ATL_PASS"]
         if auth.startswith("token:"):
             kwargs.update({"token": auth[len("token:") :]})
         else:
