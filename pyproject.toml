@@ -3,7 +3,7 @@ name = "atl_util"
 version = "0.1"
 
 dependencies = [
-    "git+https://github.com/brownterryn/atlassian-python-api.git",
+    "atlassian-python-api @ git+https://github.com/brownterryn/atlassian-python-api.git",
     "python-dotenv",
     "lxml",
     "inquirer",
