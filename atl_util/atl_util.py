@@ -15,6 +15,7 @@ from urllib.parse import urljoin
 
 import atlassian
 import requests
+import yaml
 from dotenv import load_dotenv
 
 assert partial  # imported for client convenience
@@ -214,9 +215,10 @@ def jql_result_interaction(jira, default=None):
     return results
 
 
-def jira_url(ticket: dict) -> str:
+def jira_url(ticket: dict | str) -> str:
     """URL for Jira ticket."""
-    return f"{ENV['ATL_HOST_JIRA']}/browse/{ticket['key']}"
+    key = ticket["key"] if isinstance(ticket, dict) else ticket
+    return f"{ENV['ATL_HOST_JIRA']}/browse/{key}"
 
 
 def jira_link(ticket: dict, target="_issue") -> str:
@@ -322,3 +324,13 @@ def recurse_pages(confl, page_id, state=None):
         }
         yield child_state
         yield from recurse_pages(confl, child["id"], state=child_state)
+
+
+def yamls(issue):
+    """Pull YAML codeblocks from Jira issue description."""
+    result = []
+    for block in issue["fields"]["description"].split("{code"):
+        if block.startswith(":yaml"):
+            yaml_text = "\n".join(block.split("\n")[1:])
+            result.append(yaml.safe_load(yaml_text))
+    return result
