@@ -22,6 +22,7 @@ def issue_deliv_url(data):
 
 data = json.load(open("proj.json"))
 sorting = list(issue_deliv_url(data))
+sorting = [i for i in sorting if i[1].get("in_budget", True)]
 # Sort by timing for all outputs
 sorting.sort(key=lambda x: x[1].get("timing", "Q0"))
 text = []

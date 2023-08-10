@@ -332,5 +332,9 @@ def yamls(issue):
     for block in issue["fields"]["description"].split("{code"):
         if block.startswith(":yaml"):
             yaml_text = "\n".join(block.split("\n")[1:])
-            result.append(yaml.safe_load(yaml_text))
+            try:
+                result.append(yaml.safe_load(yaml_text))
+            except yaml.scanner.ScannerError:
+                print("Invalid YAML in", issue["key"])
+                raise
     return result
