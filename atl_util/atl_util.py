@@ -103,7 +103,7 @@ class APIWrapper:
             url or ENV["ATL_HOST_" + self.type.upper()], "/rest/api/latest/"
         )
         username = username or ENV["ATL_USER"]
-        password = password or ENV["ATL_PASS"]
+        password = password or ENV.get("ATL_PASS_JIRA") or ENV["ATL_PASS"]
         self.auth = (  # Note: not used
             requests.auth.HTTPBasicAuth(username, password)
             if username and password
