@@ -23,6 +23,18 @@ for epic in todo:
             for issue in issues:
                 if (
                     len(issue["fields"]["fixVersions"]) != 1
-                    or issue["fields"]["fixVersions"][0]["name"] != "CCD 2.2.0 Release"
+                    or issue["fields"]["fixVersions"][0]["name"]
+                    != ENV["ATL_TARGET_RELEASE"]
                 ):
-                    print("ISSUE:", issue["key"], issue["fields"]["status"]["name"])
+                    print(
+                        "ISSUE:",
+                        issue["key"],
+                        issue["fields"]["status"]["name"],
+                        issue["fields"]["fixVersions"][0]["name"]
+                        if issue["fields"]["fixVersions"]
+                        else "UNASSIGNED",
+                    )
+            print(
+                f'{ENV["ATL_HOST_JIRA"]}/issues/?jql="Epic Link"={epic["key"]} and '
+                f'fixVersion != "{ENV["ATL_TARGET_RELEASE"]}"'
+            )
