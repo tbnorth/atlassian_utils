@@ -25,6 +25,7 @@ for epic in epics:
     jsons.append(
         {
             "summary": epic["fields"]["summary"],
+            "description": epic["fields"]["description"],
             "key": epic["key"],
             "yamls": atl_util.yamls(epic),
         }

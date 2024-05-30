@@ -331,7 +331,7 @@ def recurse_pages(confl, page_id, state=None):
 def yamls(issue):
     """Pull YAML codeblocks from Jira issue description."""
     result = []
-    for block in issue["fields"]["description"].split("{code"):
+    for block in (issue["fields"]["description"] or "").split("{code"):
         if block.startswith(":yaml"):
             yaml_text = "\n".join(block.split("\n")[1:])
             try:

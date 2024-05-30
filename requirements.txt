@@ -3,3 +3,4 @@ python-dotenv
 lxml
 inquirer
 requests
+pyyaml
