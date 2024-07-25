@@ -10,6 +10,7 @@ from collections.abc import Iterable
 from functools import cache, partial
 from itertools import chain
 from pathlib import Path
+
 # from pprint import pprint
 from urllib.parse import urljoin
 
@@ -25,7 +26,20 @@ if Path(HISTORY).exists():
 
 EpicInfo = namedtuple("EpicInfo", "name link type")
 
-load_dotenv("atlassian.env")
+
+def find_settings() -> Path | None:
+    """Walk up the folder tree from cwd to find first .atlassian.env or atlassian.env"""
+    path = Path.cwd()
+    while path != Path("/"):
+        for filename in "atlassian.env", ".atlassian.env":
+            env_path = path / filename
+            if env_path.exists():
+                return env_path
+        path = path.parent
+    return None
+
+
+load_dotenv(find_settings())
 ENV = os.environ
 
 STATUS_DONE = "Abandon", "Done"
