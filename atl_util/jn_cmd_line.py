@@ -99,7 +99,7 @@ def todo(issue: dict = None):
             )["key"]
 
     # Add new todo item to description
-    description += f"\n(-) {item}"
+    description += f"\n(!) {item}"
     updates = {"description": description}
     if issue is None and "To_Do" not in labels:
         # Add To_Do if we created issue just now
