@@ -1,4 +1,4 @@
-"""`jn` Jira Note quick actions command line.  See help()"""
+"""`jn` Jira Note quick actions command line.  See help()."""
 import sys
 import time
 
@@ -10,10 +10,13 @@ project = ENV["ATL_PROJECT"]
 
 
 def help():
+    """Show help."""
     print(
         """\
 jn -h
     Show this help
+jn
+    Show most recent To_Do tickets.
 jn change the color for the third screen
     Find the nearest atlassian.env or .atlassian.env, working up the folder tree.
     Get ATL_PROJECT from there, as well as user, access token.
@@ -31,27 +34,51 @@ jn -a 123 change the color for the third screen
     )
 
 
-def list_recent():
+def find_recent(text):
+    """Find recent issues matching expression."""
     query = f"project={project} "
-    text = " ".join(sys.argv[1:])
+    if isinstance(text, str):
+        text = [text]  # Not always from sys.argv
+
+    text = " ".join(text)
     if text:
         if text.startswith(":"):
             query += " and " + text[1:]
         else:
             query += f' and text ~ "{text}"'
-    query += " order by created desc"
+    query += " order by updated desc"
 
+    print(query)
     issues = jira.jql(query)
-    issues = issues["issues"]
+    return issues["issues"]
+
+
+def list_recent():
+    """Display recent issues matching user expression."""
+    issues = find_recent(sys.argv[1] if sys.argv[1:] else [])
+    display_issues(issues)
+
+
+def show_latest():
+    """Display recent To_Do tickets."""
+    issues = find_recent(":labels=To_Do")
+    display_issues(issues)
+
+
+def display_issues(issues):
+    """Display a list of issues."""
     for issue in issues[:30]:
+        issue_type = issue["fields"]["issuetype"]["name"]
         print(
             atl_util.jira_url(issue),
-            issue["fields"]["issuetype"]["name"][0],
+            "t" if issue_type == "Sub-task" else issue_type[0],
+            issue["fields"]["status"]["name"],
             issue["fields"]["summary"],
         )
 
 
 def create():
+    """Create a ticket."""
     summary, description = map(str.strip, " ".join(sys.argv[1:]).split(".", 1))
     issue_key = jira.issue_create(
         {
@@ -125,8 +152,12 @@ DISPATCH = {
     "-h": help,
     "-l": list_recent,
     "todo": todo,
+    "list": show_latest,
 }
 
 if __name__ == "__main__":
-    mode = sys.argv.pop(1) if sys.argv[1].startswith("-") else "todo"
+    if sys.argv[1:]:
+        mode = sys.argv.pop(1) if sys.argv[1].startswith("-") else "todo"
+    else:
+        mode = "list"
     DISPATCH[mode]()
