@@ -23,6 +23,8 @@ jn change the color for the third screen
     Find the most recent ticket labeled To_Do.  Create a new one if not found or
     the most recent is In Review or Done.
     Append "(-) change the color for the third screen" to the description
+jn -n change the color for the third screen
+    Create a new To_Do regardless of status of existing.
 jn -c Update the indexes.  Update indexes for all envs.
     Create a new ticket in ATL_PROJECT as above, summary = "Update the indexes",
     description = "Update the indexes for all envs."
@@ -91,7 +93,12 @@ def create():
     print(atl_util.jira_url(issue_key))
 
 
-def todo(issue: dict = None):
+def new_todo():
+    """Pass create new flag to todo()."""
+    todo(create_new=True)
+
+
+def todo(issue: dict = None, create_new=None):
     """Append a todo bullet item to a issue."""
     item = " ".join(sys.argv[1:])
     description = ""
@@ -105,9 +112,14 @@ def todo(issue: dict = None):
         issues = jira.jql(f"project={project} and labels=To_Do order by created desc")[
             "issues"
         ]
-        if issues and issues[0]["fields"]["status"]["name"] not in (
-            "Done",
-            "In Review",
+        if (
+            issues
+            and issues[0]["fields"]["status"]["name"]
+            not in (
+                "Done",
+                "In Review",
+            )
+            and create_new is not True
         ):
             # Use open issue
             issue_key = issues[0]["key"]
@@ -148,6 +160,7 @@ def append_todo():
 
 DISPATCH = {
     "-a": append_todo,
+    "-n": new_todo,
     "-c": create,
     "-h": help,
     "-l": list_recent,
