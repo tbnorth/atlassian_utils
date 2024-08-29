@@ -28,7 +28,7 @@ data = json.load(open("proj.json"))
 sorting = list(issue_deliv_url(data))
 # sorting = [i for i in sorting if i[1].get("in_budget", True)]
 # Sort by timing for all outputs
-# sorting.sort(key=lambda x: x[1].get("timing", "Q0"))
+sorting.sort(key=lambda x: x[1].get("timing", "Q0") if x[1] else "Q4")
 text = []
 text.append(f"# Project Plan {data['generated']}\n")
 sep = ["  \n---\n  \n"]
@@ -37,7 +37,7 @@ text += sep
 # Long form list of deliverables
 for epic, deliv, url in sorting:
     purpose = deliv["purpose"] if deliv else ""
-    history = deliv["history"] if deliv else ""
+    history = (deliv["history"] if deliv else "") or ""
     description = "  \n".join((epic["description"] or "").replace("\r", "").split("\n"))
     text += [
         f"\n\n## [{epic['key']}]({url}) {epic['summary']}  ",
@@ -47,10 +47,31 @@ for epic, deliv, url in sorting:
     ]
 text += sep
 
+# Committed / stretch / out of scope table
+sorting.sort(key=lambda x: x[0].get("priority", "0"))
+stretched = False
+
+text += ["<table><tr><th>Committed Goals, priority order</th><th>Description</th></th>"]
+for epic, deliv, url in sorting:
+    if int(epic["priority"]) > 3 and not stretched:
+        stretched = True
+        text += ["<tr><th>Stretch Goals, priority order</th><th></th></th>"]
+    purpose = deliv["purpose"] if deliv else ""
+    history = (deliv["history"] if deliv else "") or ""
+    description = "  \n".join((epic["description"] or "").replace("\r", "").split("\n"))
+    text += [
+        f"<tr><td> {epic['summary']}  </td>",
+        f"<td>  <a href='{url}' taget='epic'>{epic['key']}</a> {purpose} ",
+        f"  {history} </td></tr>",
+    ]
+text += ["<tr><th>Out of Scope</th><th></th></th>"]
+text += ["</table>"]
+text += sep
+
 # Cost estimates table
 text += ["", "|Epic|API (weeks)|UI (weeks)|", "|---|---|---|"]
 beans = {
-    "api": {"total": 0, "k": 0.5},
+    "api": {"total": 0, "k": 0.75},
     "ui": {"total": 0, "k": 0.75},
 }
 for epic, deliv, url in sorting:
@@ -58,22 +79,48 @@ for epic, deliv, url in sorting:
     row.append(f"[{epic['key']}]({url}) {epic['summary']}")
     for team in "api", "ui":
         req = sum(deliv["weeks"][team]) if deliv else 0
+        out = "*"
         req = beans[team]["k"] * req / 2
-        beans[team]["total"] += req
-        row.append(f"{req:.1f}")
+        if int(epic["priority"]) <= 3 and deliv and deliv.get("in_budget") is not False:
+            beans[team]["total"] += req
+            out = ""
+        row.append(f"{req:.1f}{out}")
     row.append("")
     text.append("|".join(row))
 text.append(f"||{beans['api']['total']:.1f}|{beans['ui']['total']:.1f}|")
 text += sep
 
 # Timeline table
+sorting.sort(key=lambda x: x[1].get("timing", "Q0") if x[1] else "Q4")
 text += ["", "|Item|Delivery|", "|---|---|"]
 for epic, deliv, url in sorting:
-    timeline = deliv.get("timing", "Q0") if deliv else "Q0"
+    timeline = deliv.get("timing", "Q4") if deliv else "Q4"
     if len(timeline) > 2:  # Q23 -> Q2-3
         timeline = f"{timeline[:2]}-{timeline[2:]}"
     text.append(
         "|".join(["", f"[{epic['key']}]({url}) {epic['summary']}", timeline, ""])
+    )
+text += sep
+
+# Timeline table 2.0
+text += ["", "|Quarter|Milestone|Description|Owning Organization|", "|---|---|---|---|"]
+for epic, deliv, url in sorting:
+    timeline = deliv.get("timing", "Q4") if deliv else "Q4"
+    if len(timeline) > 2:  # Q23 -> Q2-3
+        timeline = f"{timeline[:2]}-{timeline[2:]}"
+    purpose = deliv["purpose"] if deliv else ""
+    description = (epic["description"] or "").replace("\r", " ").replace("\n", " ")
+    text.append(
+        "|".join(
+            [
+                "",
+                timeline,
+                f"[{epic['key']}]({url})",
+                epic["summary"],
+                "EPA",
+                ""
+            ]
+        )
     )
 text += sep
 
@@ -90,9 +137,9 @@ for team in "api", "ui":
     beans[team]["dollars"] = int(beans[team]["hours"] * rate)
     text += [
         f"{beans[team]['total']} \"100%\" "
-        f"contractor weeks = {beans[team]['hours']} hours",
+        f"contractor weeks = {beans[team]['hours']:,} hours",
         "",
-        f"{beans[team]['hours']} x ${rate:,} = ${beans[team]['dollars']:,}",
+        f"{beans[team]['hours']:,} x ${rate:,} = ${beans[team]['dollars']:,}",
         "",
         "But this would be reduced proportional "
         f"to the level of Fed. {name} involvement.",
@@ -100,8 +147,10 @@ for team in "api", "ui":
 contract = beans["api"]["dollars"] + beans["ui"]["dollars"]
 maint = int(contract * 0.2)
 text += [
-    "", "Total cost:", "",
-    f"- Contractor cost: ${contract:.0f}",
+    "",
+    "Total cost:",
+    "",
+    f"- Contractor cost: ${contract:,}",
     f"- Maintenance of existing code, updates, bug fixes etc. at 20%: ${maint:,}",
     f"- Total: ${contract + maint:,}",
     "- Fed. 40 hour weeks",

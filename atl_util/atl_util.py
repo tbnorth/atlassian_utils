@@ -350,7 +350,8 @@ def yamls(issue):
             yaml_text = "\n".join(block.split("\n")[1:])
             try:
                 result.append(yaml.safe_load(yaml_text))
-            except yaml.scanner.ScannerError:
+            except (yaml.scanner.ScannerError, yaml.parser.ParserError):
                 print("Invalid YAML in", issue["key"])
+                print(yaml_text)
                 raise
     return result
